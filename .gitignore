@@ -1,0 +1,7 @@
+automation/node_modules/
+automation/test-results/
+automation/playwright-report/
+automation/blob-report/
+automation/playwright/.auth/
+automation/.env
+*.log

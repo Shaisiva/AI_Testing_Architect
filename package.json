@@ -1,0 +1,12 @@
+{
+  "name": "inventree-parts-qa-assessment",
+  "private": true,
+  "description": "Root scripts delegate to the Playwright project in automation/",
+  "scripts": {
+    "test": "npm test --prefix automation",
+    "test:api": "npm run test:api --prefix automation",
+    "test:ui": "npm run test:ui --prefix automation",
+    "test:smoke": "npm run test:smoke --prefix automation",
+    "report": "npm run report --prefix automation"
+  }
+}
