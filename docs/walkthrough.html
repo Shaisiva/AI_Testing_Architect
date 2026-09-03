@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>InvenTree Parts — Quality Architect Walkthrough</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --ok: #34d399;
+      --warn: #fbbf24;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    header {
+      padding: 32px 48px 16px;
+      border-bottom: 1px solid #334155;
+    }
+    header h1 { margin: 0 0 8px; font-size: 28px; }
+    header p { margin: 0; color: var(--muted); }
+    main { padding: 24px 48px 64px; max-width: 1100px; }
+    .slide {
+      display: none;
+      background: var(--card);
+      border-radius: 16px;
+      padding: 28px 32px;
+      margin-top: 20px;
+      min-height: 420px;
+      box-shadow: 0 12px 40px rgba(0,0,0,.25);
+    }
+    .slide.active { display: block; }
+    h2 { margin-top: 0; color: var(--accent); }
+    nav.controls { margin-top: 16px; display: flex; gap: 12px; align-items: center; }
+    button {
+      background: #0ea5e9;
+      color: #0f172a;
+      border: 0;
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button.secondary { background: #334155; color: var(--text); }
+    code, pre {
+      background: #0b1220;
+      border-radius: 8px;
+      font-family: Consolas, monospace;
+    }
+    pre { padding: 12px 16px; overflow: auto; }
+    ul { padding-left: 20px; }
+    .pill { display: inline-block; background: #334155; color: var(--ok); border-radius: 999px; padding: 2px 10px; font-size: 12px; margin-right: 6px; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { border-bottom: 1px solid #334155; padding: 8px 6px; text-align: left; }
+    .muted { color: var(--muted); }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>InvenTree Parts — Quality Architect Walkthrough</h1>
+    <p>Agent-assisted QA: requirements → cases → Playwright UI/API → live demo execution</p>
+  </header>
+  <main>
+    <nav class="controls">
+      <button id="prev" class="secondary" type="button">Previous</button>
+      <button id="next" type="button">Next</button>
+      <span id="pos" class="muted">1 / 6</span>
+    </nav>
+
+    <section class="slide active" data-title="Objective">
+      <h2>1. Objective</h2>
+      <p>The hiring brief evaluates an <strong>agent-assisted QA workflow</strong>, not hand-written tests claimed as AI work.</p>
+      <ul>
+        <li>Application: InvenTree — Parts module only</li>
+        <li>Phase 1: ingest docs, write comprehensive UI cases</li>
+        <li>Phase 2: ingest API schema, write API cases + runnable scripts</li>
+        <li>Phase 3: UI automation for CRUD + one cross-functional flow</li>
+      </ul>
+      <p><span class="pill">Stack</span> TypeScript + Playwright &nbsp; <span class="pill">Target</span> demo.inventree.org</p>
+    </section>
+
+    <section class="slide" data-title="Sources">
+      <h2>2. Sources ingested by the agent</h2>
+      <ul>
+        <li>https://docs.inventree.org/en/stable/part/ and sub-pages (views, create, templates, revisions)</li>
+        <li>https://docs.inventree.org/en/stable/concepts/parameters/</li>
+        <li>https://docs.inventree.org/en/stable/api/schema/part/</li>
+        <li>Live OpenAPI <code>/api/schema/</code> on the demo (API 540) — used to correct stale paths</li>
+      </ul>
+      <p class="muted">Prompts used for this ingest live in <code>agent-artefacts/prompts/</code>.</p>
+    </section>
+
+    <section class="slide" data-title="Generated cases">
+      <h2>3. Generated test cases (sample)</h2>
+      <table>
+        <thead><tr><th>ID</th><th>Title</th><th>Type</th><th>Automated</th></tr></thead>
+        <tbody>
+          <tr><td>UI-008</td><td>Create part with required fields</td><td>Positive</td><td>Yes</td></tr>
+          <tr><td>UI-111</td><td>Create → parameter → stock → category</td><td>E2E</td><td>Yes</td></tr>
+          <tr><td>UI-085</td><td>Circular revision rejected</td><td>Negative</td><td>API</td></tr>
+          <tr><td>API-012</td><td>Delete active part blocked</td><td>Negative</td><td>Yes</td></tr>
+          <tr><td>API-029</td><td>Category cascade includes child parts</td><td>Positive</td><td>Yes</td></tr>
+          <tr><td>UI-013</td><td>Import wizard opens</td><td>Positive</td><td>Manual (wizard)</td></tr>
+        </tbody>
+      </table>
+      <p class="muted">Full packs: <code>test-cases/ui-manual-tests.md</code> (120 cases) and <code>test-cases/api-manual-tests.md</code> (80 cases).</p>
+    </section>
+
+    <section class="slide" data-title="Generated scripts">
+      <h2>4. Generated automation scripts</h2>
+      <pre>POST /api/part/          → 201 + Zod partSchema
+GET  /api/part/?search=  → created pk present
+PATCH active=false       → then DELETE succeeds
+POST /api/parameter/     → model_type=part.part, model_id
+POST /api/stock/         → in_stock increases</pre>
+      <p>UI page objects use PUI names discovered on the live app:</p>
+      <ul>
+        <li><code>login-username</code> / <code>login-password</code> / <code>Log In</code></li>
+        <li><code>/web/part/category/{id}/details/parts</code> for create</li>
+        <li><code>action-menu-add-parameters-create-parameter</code> + <code>text-field-data</code></li>
+      </ul>
+    </section>
+
+    <section class="slide" data-title="Architect review">
+      <h2>5. What the architect changed after generation</h2>
+      <ul>
+        <li>Parameter APIs moved to <code>/api/parameter/</code> (not <code>/api/part/parameter/</code>)</li>
+        <li>Active parts cannot be deleted until deactivated</li>
+        <li>Stock create returns an array; IPN filter may return a bare array</li>
+        <li>Login wait must target the Parts tab, not a <code>navigation</code> landmark</li>
+      </ul>
+      <p class="muted">See <code>agent-artefacts/agent-review-notes.md</code>.</p>
+    </section>
+
+    <section class="slide" data-title="How to run">
+      <h2>6. How to run and watch the videos</h2>
+      <pre>cd automation
+copy .env.example .env
+npm install
+npx playwright install chromium
+npx playwright test --project=api
+npx playwright test --project=chromium</pre>
+      <p>Recordings:</p>
+      <ul>
+        <li><code>recordings/agent-workflow-walkthrough.webm</code> — this explainer, generated by Playwright</li>
+        <li><code>recordings/test-execution.webm</code> — smoke run against the live instance</li>
+      </ul>
+      <p class="muted">Docker local setup is documented in <code>infra/inventree/README.md</code>.</p>
+    </section>
+  </main>
+  <script>
+    const slides = [...document.querySelectorAll(".slide")];
+    let i = 0;
+    function show(n) {
+      i = Math.max(0, Math.min(slides.length - 1, n));
+      slides.forEach((s, idx) => s.classList.toggle("active", idx === i));
+      document.getElementById("pos").textContent = (i + 1) + " / " + slides.length;
+    }
+    document.getElementById("next").onclick = () => show(i + 1);
+    document.getElementById("prev").onclick = () => show(i - 1);
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowRight") show(i + 1);
+      if (e.key === "ArrowLeft") show(i - 1);
+    });
+  </script>
+</body>
+</html>
