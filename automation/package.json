@@ -1,0 +1,20 @@
+{
+  "name": "inventree-parts-qa",
+  "version": "1.0.0",
+  "private": true,
+  "description": "InvenTree Parts module QA — Playwright UI + API automation",
+  "scripts": {
+    "test": "playwright test",
+    "test:api": "playwright test --project=api",
+    "test:ui": "playwright test --project=chromium",
+    "test:smoke": "playwright test --grep @smoke",
+    "test:walkthrough": "playwright test --project=walkthrough tests/demo/walkthrough.spec.ts",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.55.0",
+    "dotenv": "^16.6.1",
+    "typescript": "^5.9.2",
+    "zod": "^3.25.76"
+  }
+}
